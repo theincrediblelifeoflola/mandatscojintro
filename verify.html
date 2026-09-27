@@ -56,7 +56,7 @@
     }).then(function(x){
       if(x.code===200){
         var m=x.j.meta||{}, d=new Date(x.j.createdAt);
-        var rows=[['Référence',m.reference],['Type d\'acte',m.type],['Date de l\'acte',frDate(m.date)],
+        var rows=[['Référence',m.reference],['Type d\'acte',m.type],['Date et heure de l\'acte',frDate(m.date)+(m.heure?' à '+m.heure.replace(':','h'):'')],
                   ['Affaire',m.affaire],['Personne visée',m.personne],['Magistrat signataire',m.magistrat],
                   ['Enregistré le',d.toLocaleString('fr-FR',{dateStyle:'long',timeStyle:'short'})]]
                  .filter(function(r){return r[1];});

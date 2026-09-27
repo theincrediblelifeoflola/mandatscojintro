@@ -1,8 +1,28 @@
-.git
-.gitignore
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Vercel
+.vercel/
+.env.local
+.env.*.local
+
+# Logs
 *.log
 npm-debug.log*
-*.md
-.env.example
-.vercelignore
+
+# Temp files
+*.tmp
+.cache/

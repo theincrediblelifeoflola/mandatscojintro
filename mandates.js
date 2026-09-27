@@ -3,7 +3,7 @@ const { redis, configured } = require('../lib/redis');
 
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REF_RE = /^SACOJ\d{8}-\d{1,6}$/;
-const META_KEYS = ['type', 'title', 'reference', 'date', 'affaire', 'personne', 'magistrat'];
+const META_KEYS = ['type', 'title', 'reference', 'date', 'heure', 'affaire', 'personne', 'magistrat'];
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');

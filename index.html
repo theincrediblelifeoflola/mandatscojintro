@@ -130,6 +130,8 @@
 
   function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function frDate(s){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');return m?m[3]+'/'+m[2]+'/'+m[1]:(s||'');}
+  function frHeure(h){var m=/^(\d{2}):(\d{2})/.exec(h||'');return m?m[1]+'h'+m[2]:'';}
+  function actDateTime(){ if(!data.date) return ''; var h=frHeure(data.heure); return frDate(data.date)+(h?' à '+h:''); }
   function frDateTime(s){var m=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(s||'');return m?(m[3]+'/'+m[2]+'/'+m[1]+' à '+m[4]+'h'+m[5]):(s||'');}
   function or(v,ph){return (v&&String(v).trim())?esc(v):'<span class="muted">'+(ph||'—')+'</span>';}
   function roman(n){return ['I','II','III','IV','V','VI','VII','VIII','IX','X'][n]||(n+1);}
@@ -333,7 +335,7 @@
 
   function buildMeta(){
     var h='<div class="st">En-tête du dossier</div>'+
-      '<div class="row2">'+'<div class="grp"><label class="l">Référence (automatique)</label><input data-b="reference" readonly placeholder="Attribuée à l\'enregistrement" style="opacity:.75;cursor:default;"></div>'+inp('date','Date','','date')+'</div>'+
+      '<div class="row2">'+'<div class="grp"><label class="l">Référence (automatique)</label><input data-b="reference" readonly placeholder="Attribuée à l\'enregistrement" style="opacity:.75;cursor:default;"></div>'+'<div class="grp"><label class="l">Date et heure (automatiques)</label><input id="autoDate" readonly placeholder="Attribuées à l\'enregistrement" style="opacity:.75;cursor:default;"></div>'+'</div>'+
       inp('autorite','Autorité','Cour de Justice - Etat de San Andreas')+
       inp('magistrate','Magistrat (en-tête)','Mary Whitaker, Juge');
     if(currentType!=='citation'){
@@ -429,6 +431,7 @@
   function mountForm(){
     document.getElementById('metaform').innerHTML=buildMeta();
     document.getElementById('dynform').innerHTML=buildDyn();
+    setTimeout(function(){ if(typeof syncRef==='function') syncRef(); },0);
     // restaurer valeurs + écouteurs
     document.querySelectorAll('[data-b]').forEach(function(el){
       var k=el.getAttribute('data-b');
@@ -512,14 +515,14 @@
         '<div class="who">Le magistrat signataire,</div>'+
         '<div class="nm">'+or(data.mag_name,'Mary Whitaker')+'</div>'+
         '<div>'+or(data.mag_title,'Juge à la Cour de Justice - Etat de San Andreas')+'</div>'+
-        '<div>'+esc(frDate(data.date)||'')+'</div>'+
+        (data.date?'<div>Le '+esc(actDateTime())+'</div>':'')+
       '</div>';
     }
     return '<div class="sec">'+esc(n)+'</div>'+body;
   }
 
   function render(){
-    if(lastAct && !keepAct){ lastAct=null; data.reference=''; syncRef(); hideLink(); }
+    if(lastAct && !keepAct){ lastAct=null; clearAct(); hideLink(); }
     var t=TYPES[currentType];
     var h='';
     h+='<div class="rhead"><img class="rseal" src="'+SEAL+'"><div class="rc"><b>COUR DE JUSTICE - ETAT DE SAN ANDREAS</b>'+(t.chamber?'<br><i>'+esc(t.chamber)+'</i>':'')+'</div><div class="rlabel">'+esc(t.title)+'</div></div>';
@@ -527,7 +530,7 @@
     h+='<div class="ctitle">COUR DE JUSTICE - ETAT DE SAN ANDREAS</div>'+(t.chamber?'<div class="csub">'+esc(t.chamber)+'</div>':'');
     h+='<div class="banner"><div class="bt">'+esc(t.title)+'</div><div class="bs">'+esc(t.sub)+'</div></div>';
     h+='<table class="info">'+
-        '<tr><td class="k">Référence</td><td>'+or(data.reference,'Attribuée à l\'enregistrement')+'</td><td class="k">Date</td><td>'+or(frDate(data.date),'JJ/MM/AAAA')+'</td></tr>'+
+        '<tr><td class="k">Référence</td><td>'+or(data.reference,'Attribuée à l\'enregistrement')+'</td><td class="k">Date et heure</td><td>'+or(actDateTime(),'Attribuées à l\'enregistrement')+'</td></tr>'+
         '<tr><td class="k">Autorité</td><td>'+or(data.autorite,'Cour de Justice - Etat de San Andreas')+'</td><td class="k">Magistrat</td><td>'+or(data.magistrate,'Mary Whitaker, Juge')+'</td></tr>'+
         (currentType==='citation'
           ? '<tr><td class="k">Affaire</td><td colspan="3">'+or(data.affaire,'—')+'</td></tr>'
@@ -615,7 +618,7 @@
   function registerMandate(id,canvas,qr){
     var img=snapshot(canvas,0.82); if(img.length>2500000) img=snapshot(canvas,0.8,0.75); if(img.length>2500000) img=snapshot(canvas,0.72,0.5);
     var t=TYPES[currentType];
-    var meta={type:t.label,title:t.title,reference:data.reference||'',date:data.date||'',affaire:data.affaire||'',personne:data.pc_nom||'',magistrat:data.mag_name||''};
+    var meta={type:t.label,title:t.title,reference:data.reference||'',date:data.date||'',heure:data.heure||'',affaire:data.affaire||'',personne:data.pc_nom||'',magistrat:data.mag_name||''};
     return fetch('/api/mandates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,meta:meta,image:img,qr:qr||null})})
       .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ if(!r.ok) throw new Error(j.error||('HTTP '+r.status)); return j; }); });
   }
@@ -629,7 +632,8 @@
   function savePDF(canvas){var pdf=new window.jspdf.jsPDF('p','pt','a4');var pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();var iw=canvas.width,ih=canvas.height,ratio=pw/iw,pageSrcH=ph/ratio,y=0,first=true;while(y<ih-1){var sh=Math.min(pageSrcH,ih-y);var sl=document.createElement('canvas');sl.width=iw;sl.height=sh;sl.getContext('2d').drawImage(canvas,0,y,iw,sh,0,0,iw,sh);if(!first)pdf.addPage();pdf.addImage(sl.toDataURL('image/png'),'PNG',0,0,pw,sh*ratio);first=false;y+=pageSrcH;}pdf.save(fname('pdf'));}
 
   var exporting=false, lastAct=null, keepAct=false;
-  function syncRef(){ var el=document.querySelector('[data-b="reference"]'); if(el) el.value=data.reference||''; }
+  function syncRef(){ var el=document.querySelector('[data-b="reference"]'); if(el) el.value=data.reference||''; var d=document.getElementById('autoDate'); if(d) d.value=actDateTime(); }
+  function clearAct(){ data.reference=''; data.date=''; data.heure=''; syncRef(); }
   function hideLink(){ var b=document.getElementById('actLink'); if(b){b.style.display='none';b.innerHTML='';} }
   function showLink(act){
     var b=document.getElementById('actLink'), url=mandateUrl(act.id);
@@ -649,7 +653,7 @@
   }
   function reserveReference(){
     return fetch('/api/reference',{method:'POST'}).then(function(r){
-      return r.json().catch(function(){return {};}).then(function(j){ if(!r.ok||!j.reference) throw new Error(j.error||('HTTP '+r.status)); return j.reference; });
+      return r.json().catch(function(){return {};}).then(function(j){ if(!r.ok||!j.reference) throw new Error(j.error||('HTTP '+r.status)); return j; });
     });
   }
   function capture(){ return new Promise(function(res,rej){ withCanvas(res,function(){rej(new Error('capture'));}); }); }
@@ -658,8 +662,8 @@
   function ensureRegistered(){
     if(lastAct) return Promise.resolve(lastAct);
     var id=newId(), box=null;
-    return reserveReference().then(function(ref){
-      data.reference=ref; syncRef();
+    return reserveReference().then(function(j){
+      var ref=j.reference; data.reference=ref; data.date=j.date||''; data.heure=j.heure||''; syncRef();
       keepAct=true; render(); keepAct=false;
       box=addQrBlock(id);
       var pr=document.getElementById('page').getBoundingClientRect(), br=box.getBoundingClientRect();
@@ -673,7 +677,7 @@
       });
     }).catch(function(e){
       if(box) box.remove();
-      data.reference=''; syncRef(); keepAct=true; render(); keepAct=false;
+      clearAct(); keepAct=true; render(); keepAct=false;
       throw e;
     });
   }
