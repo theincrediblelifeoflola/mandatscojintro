@@ -606,17 +606,17 @@
     if(foot) page.insertBefore(box,foot); else page.appendChild(box);
     return box;
   }
-  function snapshot(canvas,q){
-    var w=Math.round(canvas.width/2), h=Math.round(canvas.height/2);
+  function snapshot(canvas,q,f){
+    f=f||1; var w=Math.round(canvas.width*f), h=Math.round(canvas.height*f);
     var s=document.createElement('canvas'); s.width=w; s.height=h;
     var g=s.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,w,h); g.drawImage(canvas,0,0,w,h);
     return s.toDataURL('image/jpeg',q);
   }
-  function registerMandate(id,canvas){
-    var img=snapshot(canvas,0.72); if(img.length>1500000) img=snapshot(canvas,0.5);
+  function registerMandate(id,canvas,qr){
+    var img=snapshot(canvas,0.82); if(img.length>2500000) img=snapshot(canvas,0.8,0.75); if(img.length>2500000) img=snapshot(canvas,0.72,0.5);
     var t=TYPES[currentType];
     var meta={type:t.label,title:t.title,reference:data.reference||'',date:data.date||'',affaire:data.affaire||'',personne:data.pc_nom||'',magistrat:data.mag_name||''};
-    return fetch('/api/mandates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,meta:meta,image:img})})
+    return fetch('/api/mandates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,meta:meta,image:img,qr:qr||null})})
       .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ if(!r.ok) throw new Error(j.error||('HTTP '+r.status)); return j; }); });
   }
 
@@ -662,9 +662,11 @@
       data.reference=ref; syncRef();
       keepAct=true; render(); keepAct=false;
       box=addQrBlock(id);
-      return capture().then(function(canvas){ box.remove(); box=null; return {canvas:canvas,ref:ref}; });
+      var pr=document.getElementById('page').getBoundingClientRect(), br=box.getBoundingClientRect();
+      var qr={x:(br.left-pr.left)/pr.width, y:(br.top-pr.top)/pr.height, w:br.width/pr.width, h:br.height/pr.height};
+      return capture().then(function(canvas){ box.remove(); box=null; return {canvas:canvas,ref:ref,qr:qr}; });
     }).then(function(x){
-      return registerMandate(id,x.canvas).then(function(){
+      return registerMandate(id,x.canvas,x.qr).then(function(){
         lastAct={id:id,reference:x.ref,canvas:x.canvas};
         showLink(lastAct);
         return lastAct;

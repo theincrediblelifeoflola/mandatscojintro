@@ -8,6 +8,11 @@
   html,body{margin:0;background:#e9ebef;font-family:Georgia,'Times New Roman',serif;}
   main{max-width:900px;margin:0 auto;padding:16px 10px 30px;}
   img{display:block;width:100%;height:auto;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.15);}
+  .doc{position:relative;}
+  .qr-link{position:absolute;display:block;border-radius:4px;outline:2px solid transparent;transition:outline-color .15s,background .15s;}
+  .qr-link:hover,.qr-link:focus{outline-color:#b08a3e;background:rgba(176,138,62,.08);}
+  .verif{display:block;text-align:right;margin-top:10px;font-size:13px;color:#1f2e4a;text-decoration:none;}
+  .verif:hover{text-decoration:underline;}
   .msg{text-align:center;color:#444;margin-top:30vh;font-size:16px;}
 </style>
 </head>
@@ -24,8 +29,17 @@
     if(x.code===200){
       var m=x.j.meta||{};
       document.title=(m.reference?m.reference+' — ':'')+(m.type||'Acte')+' — Cour de Justice';
-      var img=new Image(); img.alt=document.title; img.src=x.j.image;
-      out.innerHTML=''; out.appendChild(img);
+      var vurl='/verify?id='+encodeURIComponent(x.j.id);
+      var doc=document.createElement('div'); doc.className='doc';
+      var img=new Image(); img.alt=document.title; img.src=x.j.image; doc.appendChild(img);
+      var q=x.j.qr;
+      if(q){
+        var a=document.createElement('a'); a.className='qr-link'; a.href=vurl; a.title='Vérifier l\'authenticité de cet acte';
+        a.style.left=(q.x*100)+'%'; a.style.top=(q.y*100)+'%'; a.style.width=(q.w*100)+'%'; a.style.height=(q.h*100)+'%';
+        doc.appendChild(a);
+      }
+      var v=document.createElement('a'); v.className='verif'; v.href=vurl; v.textContent='Vérifier l\'authenticité de cet acte →';
+      out.innerHTML=''; out.appendChild(doc); out.appendChild(v);
     } else if(x.code===404||x.code===400){ msg('Aucun acte ne correspond à ce lien.'); }
     else { msg('Service momentanément indisponible. Réessayez plus tard.'); }
   }).catch(function(){ msg('Impossible de charger l\'acte. Vérifiez votre connexion.'); });
