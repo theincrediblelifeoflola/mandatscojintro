@@ -1,0 +1,157 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  GÉNÉRATEUR D'ACTES JUDICIAIRES — Cour de Justice - Etat de San Andreas     ║
+║  Version 2.0 : Authentification QR Code + Vérification en ligne             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📦 CONTENU DU ZIP
+═════════════════
+
+✓ index.html           — Application principale (générateur + aperçu)
+✓ verify.html          — Page de vérification publique (scan QR Code)
+✓ vercel.json          — Configuration Vercel (routage, cache, sécurité)
+✓ package.json         — Métadonnées du projet
+✓ README.md            — Documentation complète
+✓ DEPLOYMENT.md        — Guide de déploiement rapide (3 min)
+✓ .gitignore           — Fichiers à ignorer pour Git
+✓ .vercelignore        — Fichiers à ignorer pour Vercel
+
+🚀 DÉPLOYER EN 3 MINUTES
+═════════════════════════
+
+1️⃣  GITHUB (optionnel mais recommandé)
+    
+    git init
+    git add .
+    git commit -m "Générateur d'actes judiciaires v2.0"
+    git remote add origin https://github.com/[TON-USER]/generateur-coj.git
+    git push -u origin main
+
+2️⃣  VERCEL
+
+    Option A : Via GitHub
+    ├─ Aller sur vercel.com
+    ├─ Cliquer "New Project"
+    ├─ Sélectionner le repo GitHub
+    └─ Cliquer "Deploy" ✓
+
+    Option B : Via Vercel CLI
+    ├─ npm install -g vercel
+    ├─ vercel login
+    └─ vercel --prod ✓
+
+    Option C : Drag & Drop
+    ├─ Aller sur vercel.com/new
+    └─ Glisser-déposer ce ZIP ✓
+
+3️⃣  TEST
+
+    Votre site : https://[project-name].vercel.app
+    Vérification : https://[project-name].vercel.app/verify.html
+
+✨ FONCTIONNALITÉS
+═══════════════════
+
+Génération
+├─ 11 types de mandats (arrêt, perquisition, saisie, réquisition, etc.)
+├─ Formulaire dynamique avec aperçu en temps réel
+├─ Export PDF avec QR Code d'authentification
+└─ Export PNG
+
+Authentification
+├─ UUID unique par mandat généré
+├─ QR Code inséré au bas du PDF
+├─ Stockage persistant (localStorage infini)
+└─ Immuable : impossible de modifier après génération
+
+Vérification (Page publique)
+├─ Accès libre : /verify.html
+├─ Recherche par UUID ou scan QR
+├─ Affichage du mandat original + métadonnées
+└─ Confirmation : "Mandat authentifié" ou "Non trouvé"
+
+🔐 STOCKAGE & SÉCURITÉ
+════════════════════════
+
+• localStorage : Chaque navigateur a son propre stockage
+• Infini : Aucune expiration des mandats
+• Immuable : UUID + timestamp pour chaque document
+• Traçable : Impossible de falsifier sans l'UUID original
+• Privé : Stockage local, pas de serveur de base de données
+
+📱 UTILISATION
+════════════════
+
+Générer :
+├─ Sélectionner le type de mandat
+├─ Remplir les champs
+├─ Aperçu en temps réel
+└─ Cliquer "PDF" → QR Code généré automatiquement
+
+Vérifier :
+├─ Méthode 1 : Scanner le QR Code du PDF
+├─ Méthode 2 : Aller à /verify.html?id=UUID
+└─ Méthode 3 : Entrer l'UUID manuellement
+
+🌐 APRÈS DÉPLOIEMENT
+═════════════════════
+
+✓ Partager le lien public avec les utilisateurs
+✓ Tester sur mobile (générateur + scan QR)
+✓ Ajouter un domaine personnalisé si souhaité
+✓ Chaque mandat sera authentifiable publiquement
+
+⚙️ CONFIGURATION VERCEL
+═══════════════════════
+
+vercel.json configure automatiquement :
+├─ Clean URLs : /index → /index.html
+├─ Cache : 1h pour assets, 10min pour verify.html
+├─ Headers de sécurité : X-Content-Type-Options, X-Frame-Options
+└─ Rewrites : /verify → /verify.html
+
+📊 STATS
+═════════
+
+• Taille : ~930 KB
+• Dépendances : 3 librairies CDN (html2canvas, jsPDF, qrcode.js)
+• Backend : Aucun (100% client-side)
+• Mode offline : Fonctionne sans connexion
+• Mandats : 11 types
+
+💡 CONSEILS
+════════════
+
+1. Lire DEPLOYMENT.md pour les étapes détaillées
+2. Lire README.md pour la documentation complète
+3. Tester localement d'abord (ouvrir index.html dans un navigateur)
+4. Vercel détecte automatiquement vercel.json ✓
+5. Domaine personnalisé = QR Codes pointeront vers le bon endroit 🎯
+
+🆘 TROUBLESHOOTING
+═══════════════════
+
+Problème : "Mandat non trouvé" en vérification
+→ Le mandat doit avoir été généré sur ce navigateur/domaine
+
+Problème : QR Code ne scanne pas
+→ Vérifier que qrcode.js CDN est accessible
+
+Problème : PDF n'exporte pas
+→ Vérifier que html2canvas et jsPDF CDN sont accessibles
+
+Problème : localStorage plein
+→ Nettoyer l'historique du navigateur ou exporter les mandats
+
+📞 BESOIN D'AIDE ?
+═══════════════════
+
+1. Lire README.md (documentation complète)
+2. Lire DEPLOYMENT.md (guide détaillé)
+3. Vérifier les logs Vercel : Dashboard → Deployments
+
+═════════════════════════════════════════════════════════════════════════════════
+
+✅ PRÊT À DÉPLOYER ? Suis les 3 étapes ci-dessus et tu seras en ligne en 3 min !
+
+Version 2.0 — Septembre 2026
+Authentification QR Code • Vérification en ligne • 100% Client-side

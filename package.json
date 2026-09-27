@@ -1,0 +1,36 @@
+{
+  "name": "generateur-actes-judiciaires-coj",
+  "version": "2.0.0",
+  "description": "Générateur d'actes judiciaires avec authentification QR Code — Cour de Justice - Etat de San Andreas",
+  "author": "Cour de Justice - Etat de San Andreas",
+  "license": "PROPRIETARY",
+  "private": true,
+  "keywords": [
+    "actes",
+    "judiciaires",
+    "mandat",
+    "citation",
+    "authentification",
+    "qr-code"
+  ],
+  "scripts": {
+    "deploy": "vercel"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "external-dependencies": {
+    "html2canvas": "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+    "jsPDF": "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+    "qrcode": "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+  },
+  "storage": "localStorage (client-side)",
+  "features": {
+    "mandats": 11,
+    "authentication": "QR Code avec UUID",
+    "verification": "Page publique /verify.html",
+    "export": "PDF, PNG"
+  }
+}
