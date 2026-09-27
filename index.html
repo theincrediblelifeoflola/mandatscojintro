@@ -584,6 +584,7 @@
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16);});
   }
   function verifyUrl(id){ return location.origin+'/verify?id='+encodeURIComponent(id); }
+  function mandateUrl(id){ return location.origin+'/mandat?id='+encodeURIComponent(id); }
   // QR dessiné directement dans un <canvas> (synchrone, capturé fiablement par html2canvas)
   function qrCanvas(text,px){
     var q=qrcode(0,'M'); q.addData(text); q.make();
@@ -631,9 +632,9 @@
   function syncRef(){ var el=document.querySelector('[data-b="reference"]'); if(el) el.value=data.reference||''; }
   function hideLink(){ var b=document.getElementById('actLink'); if(b){b.style.display='none';b.innerHTML='';} }
   function showLink(act){
-    var b=document.getElementById('actLink'), url=verifyUrl(act.id);
+    var b=document.getElementById('actLink'), url=mandateUrl(act.id);
     b.innerHTML='<div class="ttl">✓ Acte enregistré — <span class="ref">'+esc(act.reference)+'</span></div>'+
-      '<div>Lien permanent de consultation :</div><input readonly value="'+esc(url)+'">'+
+      '<div>Lien permanent du mandat :</div><input readonly value="'+esc(url)+'">'+
       '<div class="row"><button type="button" class="btn btn-png" id="lnkCopy">Copier le lien</button>'+
       '<button type="button" class="btn btn-png" id="lnkOpen">Ouvrir</button></div>';
     b.style.display='block';

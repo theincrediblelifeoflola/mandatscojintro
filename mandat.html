@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acte — Cour de Justice - Etat de San Andreas</title>
+<style>
+  html,body{margin:0;background:#e9ebef;font-family:Georgia,'Times New Roman',serif;}
+  main{max-width:900px;margin:0 auto;padding:16px 10px 30px;}
+  img{display:block;width:100%;height:auto;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.15);}
+  .msg{text-align:center;color:#444;margin-top:30vh;font-size:16px;}
+</style>
+</head>
+<body>
+<main id="out"><div class="msg">Chargement de l'acte…</div></main>
+<script>
+  var out=document.getElementById('out');
+  function msg(t){out.innerHTML='<div class="msg"></div>';out.firstChild.textContent=t;}
+  var sp=new URLSearchParams(location.search), id=sp.get('id'), ref=sp.get('ref');
+  if(!id && !ref){ msg('Aucun acte indiqué.'); }
+  else fetch('/api/mandates?'+(id?'id='+encodeURIComponent(id):'ref='+encodeURIComponent(ref))).then(function(r){
+    return r.json().catch(function(){return {};}).then(function(j){return {code:r.status,j:j};});
+  }).then(function(x){
+    if(x.code===200){
+      var m=x.j.meta||{};
+      document.title=(m.reference?m.reference+' — ':'')+(m.type||'Acte')+' — Cour de Justice';
+      var img=new Image(); img.alt=document.title; img.src=x.j.image;
+      out.innerHTML=''; out.appendChild(img);
+    } else if(x.code===404||x.code===400){ msg('Aucun acte ne correspond à ce lien.'); }
+    else { msg('Service momentanément indisponible. Réessayez plus tard.'); }
+  }).catch(function(){ msg('Impossible de charger l\'acte. Vérifiez votre connexion.'); });
+</script>
+</body>
+</html>
