@@ -633,6 +633,17 @@
 
   var exporting=false, lastAct=null, keepAct=false;
   function syncRef(){ var el=document.querySelector('[data-b="reference"]'); if(el) el.value=data.reference||''; var d=document.getElementById('autoDate'); if(d) d.value=actDateTime(); }
+  // Date et heure de Paris (secours si le serveur ne les fournit pas)
+  function parisNow(){
+    var d=new Date();
+    try{
+      var date=new Intl.DateTimeFormat('fr-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+      var heure=new Intl.DateTimeFormat('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d);
+      if(/^\d{4}-\d{2}-\d{2}$/.test(date) && /^\d{2}:\d{2}$/.test(heure)) return {date:date,heure:heure};
+    }catch(e){}
+    function p(n){return (n<10?'0':'')+n;}
+    return {date:d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()), heure:p(d.getHours())+':'+p(d.getMinutes())};
+  }
   function clearAct(){ data.reference=''; data.date=''; data.heure=''; syncRef(); }
   function hideLink(){ var b=document.getElementById('actLink'); if(b){b.style.display='none';b.innerHTML='';} }
   function showLink(act){
@@ -663,7 +674,8 @@
     if(lastAct) return Promise.resolve(lastAct);
     var id=newId(), box=null;
     return reserveReference().then(function(j){
-      var ref=j.reference; data.reference=ref; data.date=j.date||''; data.heure=j.heure||''; syncRef();
+      var ref=j.reference, now=parisNow();
+      data.reference=ref; data.date=j.date||now.date; data.heure=j.heure||now.heure; syncRef();
       keepAct=true; render(); keepAct=false;
       box=addQrBlock(id);
       var pr=document.getElementById('page').getBoundingClientRect(), br=box.getBoundingClientRect();
