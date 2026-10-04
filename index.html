@@ -394,9 +394,7 @@
       } else if(k==='charges'){
         h+='<div class="st">'+esc(s.t)+'</div>'+
            inp('qualif','Qualification principale','Ex. : Menaces aggravées')+
-           ta('connexes','Infractions connexes (séparées par ;)')+
-           '<div class="row2">'+inp('datefaits','Date des faits','2 août 2026')+inp('lieufaits','Lieu des faits','Ammu-Nation…')+'</div>'+
-           inp('victime','Victime déclarée','Nom de la victime');
+           ta('connexes','Infractions connexes (séparées par ;)');
       } else if(k==='checklist'){
         h+=buildObjetUI();
       } else if(k==='text'){
@@ -483,10 +481,7 @@
     } else if(k==='charges'){
       body='<table class="kv">'+
         '<tr><td class="k">Qualification principale</td><td class="v">'+or(data.qualif,'—')+'</td></tr>'+
-        '<tr><td class="k">Infractions connexes</td><td class="v">'+or(data.connexes,'—')+'</td></tr>'+
-        '<tr><td class="k">Date des faits</td><td class="v">'+or(data.datefaits,'—')+'</td></tr>'+
-        '<tr><td class="k">Lieu des faits</td><td class="v">'+or(data.lieufaits,'—')+'</td></tr>'+
-        '<tr><td class="k">Victime déclarée</td><td class="v">'+or(data.victime,'—')+'</td></tr>'+'</table>';
+        '<tr><td class="k">Infractions connexes</td><td class="v">'+or(data.connexes,'—')+'</td></tr>'+'</table>';
     } else if(k==='checklist'){
       var arr=objetData[currentType]||[];
       if(!arr.length){body='<div class="muted">—</div>';}
