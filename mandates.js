@@ -1,5 +1,6 @@
 // Registre public des actes — lecture par identifiant ou par référence, enregistrement non modifiable, sans expiration
 const { redis, configured } = require('../lib/redis');
+const { checkGreffe } = require('../lib/auth');
 
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REF_RE = /^SACOJ\d{8}-\d{1,6}$/;
@@ -25,6 +26,7 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'POST') {
+      if (!(await checkGreffe(req, res))) return; // seul le greffe peut inscrire un acte
       let body = req.body;
       if (typeof body === 'string') body = JSON.parse(body);
       const { id, meta, image, qr } = body || {};

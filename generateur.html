@@ -16,6 +16,22 @@
   .app{display:grid;grid-template-columns:minmax(360px,430px) 1fr;min-height:100vh;}
   .form{background:var(--panel);border-right:1px solid var(--border);padding:20px 18px 70px;overflow-y:auto;max-height:100vh;}
   .form h1{font-size:15px;margin:0 0 4px;}
+  .lock{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:radial-gradient(ellipse at 50% 40%,#24345a 0%,#141d31 65%);font-family:Georgia,'Times New Roman',serif;}
+  .lock.hidden{display:none;}
+  .lock-box{background:#fff;color:#1c1f26;width:100%;max-width:380px;border-top:3px solid #b08a3e;border-radius:6px;padding:28px 26px 22px;text-align:center;}
+  .lock-box img{width:96px;height:96px;display:block;margin:0 auto 10px;}
+  .lock-box h1{font-size:24px;color:#1f2e4a;margin:0 0 6px;font-weight:600;}
+  .lock-box p{font-size:15px;color:#5a6070;margin:0 0 18px;line-height:1.5;}
+  .lock-box label{display:block;text-align:left;font-size:14px;color:#1f2e4a;font-weight:600;margin-bottom:6px;}
+  .lock-box input{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:11px 12px;border:1px solid #c7ccd6;border-radius:4px;background:#fff;color:#1c1f26;}
+  .lock-box input:focus{outline:3px solid #d9c08a;outline-offset:1px;border-color:#b08a3e;}
+  .lock-box .lock-err{color:#b3242f;font-size:14px;min-height:20px;margin:8px 0 6px;text-align:left;}
+  .lock-box button{width:100%;font:inherit;font-size:16px;font-weight:600;padding:11px;border:0;border-radius:4px;background:#1f2e4a;color:#fff;cursor:pointer;}
+  .lock-box button:hover{background:#2b3f63;} .lock-box button:disabled{opacity:.6;cursor:default;}
+  .lock-box .lock-back{display:inline-block;margin-top:14px;font-size:14px;color:#1f2e4a;}
+  .lock-out{float:right;margin:2px 0 0 10px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 9px;font:inherit;font-size:12px;cursor:pointer;}
+  .lock-out:hover{color:var(--text);}
   .form .sub{color:var(--muted);font-size:12px;margin:0 0 14px;line-height:1.5;}
   .grp{margin-bottom:12px;}
   label.l{display:block;font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-weight:600;}
@@ -82,8 +98,21 @@
 </style>
 </head>
 <body>
+<div id="lock" class="lock" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+  <form class="lock-box" id="lockForm" novalidate>
+    <img id="lockSeal" alt="">
+    <h1 id="lockTitle">Espace greffe</h1>
+    <p>Réservé aux magistrats et au Bureau des Greffes de la Cour de Justice.</p>
+    <label for="lockPwd">Mot de passe</label>
+    <input type="password" id="lockPwd" autocomplete="current-password">
+    <p class="lock-err" id="lockErr" role="alert"></p>
+    <button type="submit" id="lockBtn">Déverrouiller</button>
+    <a href="/" class="lock-back">Retour au site de la Cour</a>
+  </form>
+</div>
 <div class="app">
   <form class="form" id="form" onsubmit="return false;">
+    <button type="button" class="lock-out" id="lockOut">Verrouiller</button>
     <h1>Générateur d'actes judiciaires — Cour</h1>
     <p class="sub">Cour de Justice - Etat de San Andreas. Charte officielle. Signature Mary Whitaker pré-chargée. Choisis le type, remplis, puis « PDF ».</p>
 
@@ -615,8 +644,8 @@
     var img=snapshot(canvas,0.82); if(img.length>2500000) img=snapshot(canvas,0.8,0.75); if(img.length>2500000) img=snapshot(canvas,0.72,0.5);
     var t=TYPES[currentType];
     var meta={type:t.label,title:t.title,reference:data.reference||'',date:data.date||'',heure:data.heure||'',affaire:data.affaire||'',personne:data.pc_nom||'',magistrat:data.mag_name||''};
-    return fetch('/api/mandates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,meta:meta,image:img,qr:qr||null})})
-      .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ if(!r.ok) throw new Error(j.error||('HTTP '+r.status)); return j; }); });
+    return fetch('/api/mandates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:greffeCode,id:id,meta:meta,image:img,qr:qr||null})})
+      .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ if(!r.ok) throw apiError(r,j); return j; }); });
   }
 
   function withCanvas(cb,onErr){
@@ -659,8 +688,8 @@
     });
   }
   function reserveReference(){
-    return fetch('/api/reference',{method:'POST'}).then(function(r){
-      return r.json().catch(function(){return {};}).then(function(j){ if(!r.ok||!j.reference) throw new Error(j.error||('HTTP '+r.status)); return j; });
+    return fetch('/api/reference',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:greffeCode})}).then(function(r){
+      return r.json().catch(function(){return {};}).then(function(j){ if(!r.ok||!j.reference) throw apiError(r,j); return j; });
     });
   }
   function capture(){ return new Promise(function(res,rej){ withCanvas(res,function(){rej(new Error('capture'));}); }); }
@@ -702,12 +731,51 @@
       else if(kind==='png') savePNG(act.canvas);
     }).catch(function(e){
       if(e && e.message==='capture') return;
+      if(e && e.auth){ greffeCode=''; try{sessionStorage.removeItem('greffeCode');}catch(x){} lockShow(authMessage(e.auth,true)); return; }
       alert("L'acte n'a pas pu être enregistré sur le registre de vérification ("+(e&&e.message)+").\nRien n'a été téléchargé pour éviter un QR code invalide. Réessaie dans un instant.");
     }).then(function(){exporting=false;btn.textContent=label;btn.disabled=false;});
   }
   document.getElementById('btnPdf').addEventListener('click',function(){exportAuth('pdf');});
   document.getElementById('btnPng').addEventListener('click',function(){exportAuth('png');});
   document.getElementById('btnLink').addEventListener('click',function(){exportAuth('link');});
+
+  // ---------- accès réservé au greffe ----------
+  var greffeCode='';
+  try{ greffeCode=sessionStorage.getItem('greffeCode')||''; }catch(e){}
+  function apiError(r,j){ var e=new Error(j.error||('HTTP '+r.status)); if(r.status===401||r.status===429||r.status===503) e.auth=j.code||'BAD_PASSWORD'; return e; }
+  function authMessage(code,session){
+    if(code==='TOO_MANY') return 'Trop de tentatives. Réessayez dans 15 minutes.';
+    if(code==='NOT_CONFIGURED') return "Le mot de passe du greffe n'est pas encore configuré sur le serveur.";
+    if(code==='BAD_PASSWORD') return session ? 'Le mot de passe a changé ou la session a expiré. Saisissez-le à nouveau.' : 'Mot de passe incorrect.';
+    return 'Vérification impossible pour le moment. Réessayez dans un instant.';
+  }
+  function lockShow(msg){
+    var l=document.getElementById('lock'); l.classList.remove('hidden'); document.body.style.overflow='hidden';
+    document.getElementById('lockErr').textContent=msg||'';
+    var p=document.getElementById('lockPwd'); p.value=''; setTimeout(function(){p.focus();},50);
+  }
+  function lockHide(){ document.getElementById('lock').classList.add('hidden'); document.body.style.overflow=''; }
+  function checkCode(code){
+    return fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})})
+      .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ return {status:r.status,code:j.code}; }); });
+  }
+  document.getElementById('lockSeal').src=SEAL;
+  document.getElementById('lockForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var code=document.getElementById('lockPwd').value, btn=document.getElementById('lockBtn'), err=document.getElementById('lockErr');
+    if(!code){ err.textContent='Saisissez le mot de passe.'; return; }
+    btn.disabled=true; btn.textContent='Vérification…';
+    checkCode(code).then(function(x){
+      if(x.status===200){ greffeCode=code; try{sessionStorage.setItem('greffeCode',code);}catch(e){} lockHide(); }
+      else { err.textContent=authMessage(x.code||(x.status===401?'BAD_PASSWORD':''),false); document.getElementById('lockPwd').select(); }
+    }).catch(function(){ err.textContent='Connexion au serveur impossible. Vérifiez votre connexion.'; })
+      .then(function(){ btn.disabled=false; btn.textContent='Déverrouiller'; });
+  });
+  document.getElementById('lockOut').addEventListener('click',function(){ greffeCode=''; try{sessionStorage.removeItem('greffeCode');}catch(e){} lockShow(''); });
+  if(greffeCode){
+    lockHide();
+    checkCode(greffeCode).then(function(x){ if(x.status!==200){ greffeCode=''; try{sessionStorage.removeItem('greffeCode');}catch(e){} lockShow(authMessage(x.code,true)); } }).catch(function(){});
+  } else { lockShow(''); }
 
   mountForm(); render();
 </script>
