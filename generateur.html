@@ -16,6 +16,20 @@
   .app{display:grid;grid-template-columns:minmax(360px,430px) 1fr;min-height:100vh;}
   .form{background:var(--panel);border-right:1px solid var(--border);padding:20px 18px 70px;overflow-y:auto;max-height:100vh;}
   .form h1{font-size:15px;margin:0 0 4px;}
+  [hidden]{display:none !important;}
+  .login{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:radial-gradient(ellipse at 50% 40%,#24345a 0%,#141d31 65%);font-family:Georgia,'Times New Roman',serif;}
+  .login.hidden{display:none;}
+  .login-box{background:#fff;color:#1c1f26;width:100%;max-width:380px;border-top:3px solid #b08a3e;border-radius:6px;padding:28px 26px 22px;text-align:center;}
+  .login-box img{width:96px;height:96px;display:block;margin:0 auto 10px;}
+  .login-box h1{font-size:24px;color:#1f2e4a;margin:0 0 6px;font-weight:600;}
+  .login-box p{font-size:15px;color:#5a6070;margin:0 0 16px;line-height:1.5;}
+  .login-box .login-msg{color:#b3242f;margin:0 0 12px;min-height:0;}
+  .login-box .login-msg:empty{display:none;}
+  .login-btn{display:block;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:16px;font-weight:600;text-decoration:none;padding:12px;border-radius:4px;background:#5865F2;color:#fff;}
+  .login-btn:hover{background:#4752c4;} .login-btn:focus-visible{outline:3px solid #d9c08a;outline-offset:2px;}
+  .login-back{display:inline-block;margin-top:14px;font-size:14px;color:#1f2e4a;}
+  .who-bar{font-size:12px;color:var(--muted);margin:0 0 10px;} .who-bar b{color:var(--text);} .who-bar a{color:var(--muted);margin-left:8px;}
   .form .sub{color:var(--muted);font-size:12px;margin:0 0 14px;line-height:1.5;}
   .grp{margin-bottom:12px;}
   label.l{display:block;font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-weight:600;}
@@ -82,8 +96,19 @@
 </style>
 </head>
 <body>
+<div id="login" class="login" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  <div class="login-box">
+    <img id="loginSeal" alt="">
+    <h1 id="loginTitle">Espace greffe</h1>
+    <p>Réservé aux magistrats et au Bureau des Greffes. Connectez-vous avec votre compte Discord.</p>
+    <p class="login-msg" id="loginMsg" role="alert"></p>
+    <a class="login-btn" href="/api/discord?action=login">Se connecter avec Discord</a>
+    <a class="login-back" href="/">Retour au site de la Cour</a>
+  </div>
+</div>
 <div class="app">
   <form class="form" id="form" onsubmit="return false;">
+    <div class="who-bar" id="who" hidden>Connecté : <b id="whoName"></b><a href="/api/discord?action=logout">Se déconnecter</a></div>
     <h1>Générateur d'actes judiciaires — Cour</h1>
     <p class="sub">Cour de Justice - Etat de San Andreas. Charte officielle. Signature Mary Whitaker pré-chargée. Choisis le type, remplis, puis « PDF ».</p>
 
@@ -702,6 +727,7 @@
       else if(kind==='png') savePNG(act.canvas);
     }).catch(function(e){
       if(e && e.message==='capture') return;
+      if(e && e.status===401){ showLogin('Votre session a expiré. Reconnectez-vous avec Discord.'); return; }
       alert("L'acte n'a pas pu être enregistré sur le registre de vérification ("+(e&&e.message)+").\nRien n'a été téléchargé pour éviter un QR code invalide. Réessaie dans un instant.");
     }).then(function(){exporting=false;btn.textContent=label;btn.disabled=false;});
   }
@@ -710,7 +736,28 @@
   document.getElementById('btnLink').addEventListener('click',function(){exportAuth('link');});
 
   // ---------- erreurs du registre ----------
-  function apiError(r,j){ return new Error(j.error||('HTTP '+r.status)); }
+  function apiError(r,j){ var e=new Error(j.error||('HTTP '+r.status)); e.status=r.status; return e; }
+
+  // ---------- connexion Discord (espace greffe) ----------
+  function showLogin(msg){ document.getElementById('login').classList.remove('hidden'); document.body.style.overflow='hidden'; document.getElementById('loginMsg').textContent=msg||''; }
+  function hideLogin(){ document.getElementById('login').classList.add('hidden'); document.body.style.overflow=''; }
+  document.getElementById('loginSeal').src=SEAL;
+  (function(){
+    var sp=new URLSearchParams(location.search), msg='';
+    if(sp.get('refus')) msg="Ce compte Discord n'est pas autorisé à accéder à l'espace greffe.";
+    else if(sp.get('erreur')==='config') msg="La connexion Discord n'est pas encore configurée sur le serveur.";
+    else if(sp.get('erreur')) msg='La connexion avec Discord a échoué. Réessayez.';
+    if(sp.get('refus')||sp.get('erreur')) history.replaceState(null,'',location.pathname);
+    fetch('/api/discord?action=me',{cache:'no-store'})
+      .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ return {s:r.status,j:j}; }); })
+      .then(function(x){
+        if(x.s===200 && x.j.user){ document.getElementById('whoName').textContent=x.j.user.nom||'membre de la Cour'; document.getElementById('who').hidden=false; hideLogin(); }
+        else if(x.s===503) showLogin("La connexion Discord n'est pas encore configurée sur le serveur.");
+        else if(x.s===401) showLogin(msg);
+        else showLogin('Le service de connexion est momentanément indisponible. Réessayez dans un instant.');
+      })
+      .catch(function(){ showLogin('Connexion au serveur impossible. Vérifiez votre connexion.'); });
+  })();
 
   mountForm(); render();
 </script>
