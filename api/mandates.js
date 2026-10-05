@@ -1,9 +1,10 @@
 // Registre public des actes — lecture par identifiant ou par référence, enregistrement non modifiable, sans expiration
 const { redis, configured } = require('../lib/redis');
+const { exigerConnexion } = require('../lib/session');
 
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REF_RE = /^SACOJ\d{8}-\d{1,6}$/;
-const META_KEYS = ['type', 'title', 'reference', 'date', 'affaire', 'personne', 'magistrat'];
+const META_KEYS = ['type', 'title', 'reference', 'date', 'heure', 'affaire', 'personne', 'magistrat'];
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -21,13 +22,16 @@ module.exports = async (req, res) => {
       if (!ID_RE.test(id)) return res.status(400).json({ error: 'Identifiant invalide' });
       const raw = await redis(['GET', 'mandate:' + id]);
       if (!raw) return res.status(404).json({ error: 'Acte introuvable' });
-      return res.status(200).json(JSON.parse(raw));
+      const rec = JSON.parse(raw); delete rec.emisPar; // l'auteur reste interne
+      return res.status(200).json(rec);
     }
 
     if (req.method === 'POST') {
+      const auteur = exigerConnexion(req, res); // seules les personnes autorisées peuvent inscrire un acte
+      if (!auteur) return;
       let body = req.body;
       if (typeof body === 'string') body = JSON.parse(body);
-      const { id, meta, image } = body || {};
+      const { id, meta, image, qr } = body || {};
       if (!ID_RE.test(String(id || ''))) return res.status(400).json({ error: 'Identifiant invalide' });
       if (typeof image !== 'string' || !image.startsWith('data:image/jpeg;base64,') || image.length > 3000000) {
         return res.status(400).json({ error: 'Image invalide ou trop lourde' });
@@ -41,7 +45,12 @@ module.exports = async (req, res) => {
       const reserved = await redis(['DEL', 'refres:' + ref]);
       if (reserved !== 1) return res.status(400).json({ error: 'Référence non attribuée par le registre ou déjà utilisée' });
 
-      const record = { id, meta: cleanMeta, image, createdAt: new Date().toISOString() };
+      // Zone du QR code dans l'image (fractions 0..1), pour la rendre cliquable sur la page du mandat
+      let cleanQr = null;
+      if (qr && ['x', 'y', 'w', 'h'].every(k => typeof qr[k] === 'number' && isFinite(qr[k]) && qr[k] >= 0 && qr[k] <= 1)) {
+        cleanQr = { x: qr.x, y: qr.y, w: qr.w, h: qr.h };
+      }
+      const record = { id, meta: cleanMeta, image, qr: cleanQr, emisPar: { id: auteur.id, nom: auteur.nom }, createdAt: new Date().toISOString() };
       const ok = await redis(['SET', 'mandate:' + id, JSON.stringify(record), 'NX']);
       if (ok !== 'OK') return res.status(409).json({ error: 'Identifiant déjà utilisé' });
       await redis(['SET', 'ref:' + ref, id, 'NX']);
